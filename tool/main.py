@@ -4,58 +4,41 @@
 from __future__ import unicode_literals
 import sys
 import codecs
-import requests
-import requests_cache
 from collections import OrderedDict
 from cStringIO import StringIO
 import scraperwiki
 from dateutil.parser import parse as parse_date
+from flickrapi import FlickrAPI, shorturl
+import scraperwiki
 
-BASE_URL = 'http://www.google.com'
-UNIQUE_KEYS = []
+API_KEY = "8812d02940ff6669b30904b807ecc49b"
+flickr = FlickrAPI(API_KEY)
+
+
+UNIQUE_KEYS = ['id']
 
 
 def main():
-    install_cache()
+    favs = flickr.walk(tags="kittens", extras="geo")
+    for photo in favs:
+        if photo.get('latitude') != '0':
+            print photo.get('title')
+            title = photo.get('title')
+            print photo.get('latitude')
+            latitude = float(photo.get('latitude'))
+            print photo.get('longitude')
+            longitude = float(photo.get('longitude'))
+            print photo.get('id')
+            identity = photo.get('id')
+            print shorturl.url(photo.get('id'))
+            url = shorturl.url(photo.get('id'))
+            submit_to_scraperwiki(identity, title, latitude, longitude, url)
 
-    fobj = download_url(BASE_URL)
-    for row in process(fobj):
-        scraperwiki.sqlite.save(
-            unique_keys=UNIQUE_KEYS,
-            data=row)
+    scraperwiki.status('ok', "OK")
 
-    status_text = 'Latest entry: {}'.format(get_most_recent_record())
-    print(status_text)
-
-    scraperwiki.status('ok', status_text)
-
-
-def install_cache():
-    requests_cache.install_cache(
-        expire_after=(12 * 60 * 60),
-        allowable_methods=('GET', 'POST'))
-
-
-def download_url(url):
-    response = requests.get(url)
-    response.raise_for_status()
-    return StringIO(response.content)
-
-
-def get_most_recent_record(table_name='swdata', column='date'):
-    result = scraperwiki.sql.select(
-        "MAX({1}) AS most_recent FROM {0} LIMIT 1".format(table_name, column))
-    return result[0]['most_recent']
-
-
-def process(f):
-    """
-    Take a file-like object and yield OrderedDicts.
-    """
-    row = OrderedDict([
-        ('demo_column_a', True),
-        ('demo_column_b', 7.0)])
-    yield row
+def submit_to_scraperwiki(identity, title, latitude, longitude, url):
+    result = {"id" : identity, "title" : title, "latitude" : latitude, "longitude" : longitude, "url" : url}
+    scraperwiki.sqlite.save(UNIQUE_KEYS, result, 'kittens')
 
 if __name__ == '__main__':
     sys.stdout = codecs.getwriter('utf-8')(sys.stdout)
