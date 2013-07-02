@@ -11,7 +11,7 @@ from dateutil.parser import parse as parse_date
 from flickrapi import FlickrAPI, shorturl
 import scraperwiki
 
-API_KEY = "8812d02940ff6669b30904b807ecc49b"
+API_KEY = "REDACTED"
 flickr = FlickrAPI(API_KEY)
 
 
